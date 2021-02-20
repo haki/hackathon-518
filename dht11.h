@@ -8,6 +8,7 @@
 #define DHTPIN 4          // what digital pin we're connected to
 #define DHTTYPE DHT11     // DHT11
 
+
 const uint8_t cu8TempHi = 25;
 const uint8_t cu8TempLo = 19;
 
