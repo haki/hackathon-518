@@ -14,6 +14,9 @@
 
 boolean bfan_state;
 boolean bhot_state;
+boolean bstep_mot;
+unsigned int OldTime;
+unsigned int IntervalTime;
 
 void setup(){
     Serial.begin(9600);
@@ -32,6 +35,8 @@ void setup(){
     StateDeviceInit();
     bfan_state=false;
     bhot_state = false;
+    bstep_mot=false;
+    IntervalTime=0;
 }
 
 char key;
@@ -59,7 +64,7 @@ void loop()
     // Fan State Control
     if(!bfan_state )
     {
-      if(u8HumHi>=u8CurHum )
+      if(u8HumHi<=u8CurHum )
       {
         bfan_state=true;
         digitalWrite(FAN_OUT, HIGH);
@@ -67,7 +72,7 @@ void loop()
     }
     else
     {
-      if(u8HumLo<=u8CurHum )
+      if(u8HumLo>=u8CurHum )
       {
         bfan_state=false;
         digitalWrite(FAN_OUT, LOW);
@@ -77,7 +82,7 @@ void loop()
     // Hot State Control
     if(!bhot_state )
     {
-      if(u8TempHi>=u8CurTemp)
+      if(u8TempLo>=u8CurTemp)
       {
         bhot_state=true;
         digitalWrite(HOT_OUT, HIGH);
@@ -85,11 +90,41 @@ void loop()
     }
     else
     {
-      if(u8TempLo<=u8CurTemp )
+      if(u8TempHi<=u8CurTemp )
       {
         bhot_state=false;
-        digitalWrite(FAN_OUT, LOW);
+        digitalWrite(HOT_OUT, LOW);
       }
     }
+
+    if(cAlarmPeriodTime>0)
+    {
+        if(OldTime!=currentTime)
+        {
+          IntervalTime++;
+          if(IntervalTime==AlarmPeriodTime)
+          {
+            IntervalTime=0;
+            lcd_write(1, 10, "Ocupat");
+            step_left(550);
+            lcd_write(1, 10, "Astept");
+          }
+        }
+    }
+    else
+    {
+      if((!bstep_mot)&&((currentTime==AlarmTime1)||(currentTime==AlarmTime2)||(currentTime==AlarmTime3)))
+      {
+        bstep_mot=true;
+        lcd_write(1, 10, "Ocupat");
+        step_left(550);
+        lcd_write(1, 10, "Astept");
+      }
+      else
+      {
+        bstep_mot=false;
+      }
+    }
+    OldTime=currentTime;
   }
 }
