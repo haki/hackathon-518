@@ -4,6 +4,7 @@
 #include "keypad.h"
 #include "clock.h"
 #include "statedevice.h"
+#include <SoftwareSerial.h>
 
 #define LED_RED 11
 #define LED_GREEN 12
@@ -12,14 +13,22 @@
 #define FAN_OUT 42
 #define HOT_OUT 44
 
+#define ESP_RX 15
+#define ESP_TX 14
+
+SoftwareSerial espSerial(ESP_RX, ESP_TX);
+
 boolean bfan_state;
 boolean bhot_state;
 boolean bstep_mot;
 unsigned int OldTime;
 unsigned int IntervalTime;
+unsigned int Presscaller;
 
 void setup(){
-    Serial.begin(9600);
+    Serial.begin(115200);
+    espSerial.begin(115200);
+    
     pinMode(LED_RED, OUTPUT);
     pinMode(LED_GREEN, OUTPUT);
     pinMode(LED_BLUE, OUTPUT);
@@ -35,14 +44,14 @@ void setup(){
     StateDeviceInit();
     bfan_state=false;
     bhot_state = false;
-    bstep_mot=false;
+    bstep_mot=true;
     IntervalTime=0;
+    Presscaller=0;
 }
 
 char key;
 void loop() 
-{
-  
+{ 
   dht_run();
   StateDeviceSwitch();
   if(eStateDevice == MAIN_LOOP)
@@ -51,6 +60,8 @@ void loop()
     lcd.print("H:");
     lcd.print(u8CurHum);
     lcd.print("%");
+    
+    
 
     lcd.setCursor(0,0);
     lcd.print("T:");
@@ -59,6 +70,17 @@ void loop()
     currentTime = GetClock();
     lcd_write_time(0,8,currentTime);
     lcd_write(1, 10, "Astept");
+    if(Presscaller<999)Presscaller++;
+    else{
+      Presscaller=0;
+      espSerial.println(u8CurHum);
+      //OldTime=0;
+    }
+    if(Presscaller==500)
+    {
+      espSerial.println(u8CurTemp);
+      //OldTime=0;
+    }
     delay(5);
     
     // Fan State Control
@@ -106,7 +128,7 @@ void loop()
           {
             IntervalTime=0;
             lcd_write(1, 10, "Ocupat");
-            step_left(550);
+            step_left(1050);
             lcd_write(1, 10, "Astept");
           }
         }
@@ -117,7 +139,7 @@ void loop()
       {
         bstep_mot=true;
         lcd_write(1, 10, "Ocupat");
-        step_left(550);
+        step_left(1050);
         lcd_write(1, 10, "Astept");
       }
       else
